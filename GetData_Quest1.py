@@ -75,3 +75,11 @@ print("Lille : " + str(len(format_vLille)))
 print("Lyon : " + str(len(format_vLyon)))
 print("Rennes : " + str(len(format_vRennes)))
 print("Paris : " + str(len(format_vParis)))
+
+client = MongoClient('mongodb://localhost:27017/')
+db = client.vls
+collection = db.stations
+print("inserted : " + str(len(collection.insert_many(format_vParis).inserted_ids)))
+print("inserted : " + str(len(collection.insert_many(format_vLyon).inserted_ids)))
+print("inserted : " + str(len(collection.insert_many(format_vRennes).inserted_ids)))
+print("inserted : " + str(len(collection.insert_many(format_vLille).inserted_ids)))
