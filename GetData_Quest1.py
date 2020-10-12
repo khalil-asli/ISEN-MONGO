@@ -1,3 +1,4 @@
+
 import requests
 import json
 from pprint import pprint
@@ -50,7 +51,7 @@ vParis_to_insert = [
         'size': elem.get('fields', {}).get('capacity'),
         'source': {
             'dataset': 'Paris',
-            'id_ext': elem.get('fields', {}).get('libelle')
+            'id_ext': elem.get('fields', {}).get('numdocksavailable')
         },
         'tpe': elem.get('fields', {}).get('type', '') == 'AVEC TPE'
     }
@@ -71,6 +72,18 @@ vRennes_to_insert = [
     }
     for elem in vRennes
 ]
+vLyon = get_vLyon()    
+vLyon_format = []
+for vlib in vLyon:
+    vLyon_format.append({
+        "name": vlib["name"],
+        "city": vlib["commune"],
+        "size": vlib["bike_stands"],
+        "geo": {"type": "Point", "coordinates": [vlib["lng"], vlib["lat"]]},
+        "TPE ": vlib["banking"],
+        "status": vlib["status"] == "OPEN",
+        "last update": vlib["last_update"] })
+    
 client = MongoClient("mongodb+srv://123456:khalil1234@cluster0.welnc.mongodb.net/test?retryWrites=true&w=majority")
 db = client.test
 
@@ -80,4 +93,4 @@ for vParis in vParis_to_insert:
     db.vParis.insert_one(vParis)
 for vRennes in vRennes_to_insert:
     db.vRennes.insert_one(vRennes)
-
+db.test.vLyon.insert_many(vLyon_format).inserted_ids   
