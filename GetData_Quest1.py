@@ -1,82 +1,83 @@
-import json
 import requests
-from pymongo import MongoClient
+import json
 from pprint import pprint
+from pymongo import MongoClient
 
-
-def get_datalib(url):
-    payload = {}
-    headers = {}
-    response = requests.request("GET", url, headers=headers, data=payload)
+def get_vlille():
+    url = "https://opendata.lillemetropole.fr/api/records/1.0/search/?dataset=vlille-realtime&q=&rows=3000&facet=libelle&facet=nom&facet=commune&facet=etat&facet=type&facet=etatconnexion"
+    response = requests.request("GET", url)
     response_json = json.loads(response.text.encode('utf8'))
     return response_json.get("records", [])
 
-def get_dataVlyon(url):
-    payload = {}
-    headers = {}
-    response = requests.request("GET", url, headers=headers, data=payload)
+def get_vParis():
+    url = "https://opendata.paris.fr/api/records/1.0/search/?dataset=velib-disponibilite-en-temps-reel&q=&rows=-1"
+    response = requests.request("GET", url)
+    response_json = json.loads(response.text.encode('utf8'))
+    return response_json.get("records", [])
+
+def get_vRennes():
+    url = "https://data.rennesmetropole.fr/api/records/1.0/search/?dataset=stations_vls&q="
+    response = requests.request("GET", url)
+    response_json = json.loads(response.text.encode('utf8'))
+    return response_json.get("records", [])
+
+def get_vLyon():
+    url =  "https://download.data.grandlyon.com/ws/rdata/jcd_jcdecaux.jcdvelov/all.json"
+    response = requests.request("GET", url)
     response_json = json.loads(response.text.encode('utf8'))
     return response_json.get("values", [])
 
-vlille = get_datalib(
-    "https://opendata.lillemetropole.fr/api/records/1.0/search/?dataset=vlille-realtime&q=&rows=-1")
-vLyon = get_dataVlyon(
-    "https://download.data.grandlyon.com/ws/rdata/jcd_jcdecaux.jcdvelov/all.json")
-vParis = get_datalib(
-    "https://opendata.paris.fr/api/records/1.0/search/?dataset=velib-disponibilite-en-temps-reel&q=&rows=-1")
-vRennes = get_datalib(
-    "https://data.rennesmetropole.fr/api/records/1.0/search/?dataset=stations_vls&q=&lang=fr&rows=-1")
+vlilles = get_vlille()
+vlilles_to_insert = [
+    {
+        'name': elem.get('fields', {}).get('nom', '').title(),
+        'geometry': elem.get('geometry'),
+        'size': elem.get('fields', {}).get('nbvelosdispo') + elem.get('fields', {}).get('nbplacesdispo'),
+        'source': {
+            'dataset': 'Lille',
+            'id_ext': elem.get('fields', {}).get('libelle')
+        },
+        'tpe': elem.get('fields', {}).get('type', '') == 'AVEC TPE'
+    }
+    for elem in vlilles
+]
 
-format_vLille = []
-for vlib in vlille:
-    format_vLille.append({
-        "name": vlib["fields"]["nom"],
-        "city": vlib["fields"]["commune"],
-        "size": vlib["fields"]["nbvelosdispo"] + vlib["fields"]["nbplacesdispo"],
-        "geo": vlib["geometry"],
-        "TPE ": vlib["fields"]["type"] != "SANS TPE",
-        "status": vlib["fields"]["etat"] == "EN SERVICE",
-        "last update": vlib["record_timestamp"] })
+vParis = get_vParis()
+vParis_to_insert = [
+    {
+        'name': elem.get('fields', {}).get('name', '').title(),
+        'geometry': elem.get('geometry'),
+        'size': elem.get('fields', {}).get('capacity'),
+        'source': {
+            'dataset': 'Paris',
+            'id_ext': elem.get('fields', {}).get('libelle')
+        },
+        'tpe': elem.get('fields', {}).get('type', '') == 'AVEC TPE'
+    }
+    for elem in vParis
+]
 
+vRennes = get_vRennes()
+vRennes_to_insert = [
+    {
+        'name': elem.get('fields', {}).get('nom', '').title(),
+        'geometry': elem.get('geometry'),
+        'size': elem.get('fields', {}).get('nb_socles'),
+        'source': {
+            'dataset': 'Rennes',
+            'id_ext': elem.get('fields', {}).get('libelle')
+        },
+        'tpe': elem.get('fields', {}).get('tpe', '') == 'oui'
+    }
+    for elem in vRennes
+]
+client = MongoClient("mongodb+srv://123456:khalil1234@cluster0.welnc.mongodb.net/test?retryWrites=true&w=majority")
+db = client.test
 
-format_vRennes = []
-for vlib in vRennes:
-    format_vRennes.append({
-        "name": vlib["fields"]["nom"],
-        "city": "Rennes",
-        "size": vlib["fields"]["nb_socles"],
-        "geo": vlib["geometry"],
-        "TPE ": vlib["fields"]["tpe"] == "oui",
-        "status": vlib["fields"]["etat"] == 'Ouverte',
-        "last update": vlib["record_timestamp"] })
-
-format_vParis = []
-for vlib in vParis:
-    format_vParis.append({
-        "name": vlib["fields"]["name"],
-        "city": vlib["fields"]["nom_arrondissement_communes"],
-        "size": vlib["fields"]["capacity"],
-        "geo": vlib["geometry"],
-        "TPE ": False,
-        "status": vlib["fields"]["is_renting"] == 'OUI' and vlib["fields"]["is_returning"] == 'OUI',
-        "last update": vlib["record_timestamp"] })
-
-format_vLyon = []
-for vlib in vLyon:
-    format_vLyon.append({
-        "name": vlib["name"],
-        "city": vlib["commune"],
-        "size": vlib["bike_stands"],
-        "geo": {"type": "Point", "coordinates": [vlib["lng"], vlib["lat"]]},
-        "TPE ": vlib["banking"],
-        "status": vlib["status"] == "OPEN",
-        "last update": vlib["last_update"] })
-
-
-# AFFICHAGE
-print("Lille : " + str(len(format_vLille)))
-print("Lyon : " + str(len(format_vLyon)))
-print("Rennes : " + str(len(format_vRennes)))
-print("Paris : " + str(len(format_vParis)))
-
+for vlille in vlilles_to_insert:
+    db.vLille.insert_one(vlille)
+for vParis in vParis_to_insert:
+    db.vParis.insert_one(vParis)
+for vRennes in vRennes_to_insert:
+    db.vRennes.insert_one(vRennes)
 
