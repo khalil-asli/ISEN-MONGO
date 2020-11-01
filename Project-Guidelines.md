@@ -21,9 +21,9 @@ Rennes
  
 
 4) Business program:
-  - find station with name (with some letters)
-  - update a stations
-  - delete a station and datas
-  - deactivate all station in an area
-  - give all stations with a ratio bike/total_stand under 20% between 18h and 19h00 (monday to
-    friday)
+    - find station with name (with some letters)
+    - update a stations
+    - delete a station and datas
+    - deactivate all station in an area
+    - give all stations with a ratio bike/total_stand under 20% between 18h and 19h00 (monday to
+      friday)
