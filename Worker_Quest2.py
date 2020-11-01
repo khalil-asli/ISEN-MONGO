@@ -30,6 +30,8 @@ while True:
     vlilles = get_vlille()
     updateddata = [
         {
+            "name": elem.get('fields', {}).get('nom', '').title(),
+            "geometry": elem.get('geometry'),
             "bike_availbale": elem.get('fields', {}).get('nbvelosdispo'),
             "stand_availbale": elem.get('fields', {}).get('nbplacesdispo'),
             "date": dateutil.parser.parse(elem.get('fields', {}).get('datemiseajour')),
